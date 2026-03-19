@@ -235,8 +235,12 @@ def _collect_aos_value(
         # Homogeneous and fully filled: reshape into a regular numpy array
         # ----------------------------------------------------------------
         leaf_shape = shapes[0]
-        leaf_val = np.asarray(values[0])
-        result = np.empty(aos_shape + leaf_shape, dtype=leaf_val.dtype)
+        # Derive dtype from ALL values, not just values[0].  For unicode strings
+        # numpy infers the dtype length from the longest element (e.g. "channel_1"
+        # → <U9 but "channel_30" → <U10), so using only values[0] silently
+        # truncates longer strings in subsequent slots.
+        dtype = np.result_type(*[np.asarray(v).dtype for v in values])
+        result = np.empty(aos_shape + leaf_shape, dtype=dtype)
         for idx_tuple, node in nodes_dict.items():
             result[idx_tuple] = node.value
         return result
